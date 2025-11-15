@@ -1,0 +1,41 @@
+---
+title: "dataset"
+format: pdf
+---
+
+```{r}
+#Import all libraries
+library(rvest)
+library(stringr)
+library(tidyverse)
+library(janitor)
+```
+
+
+```{r}
+robotstxt::paths_allowed("https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_1")
+                         
+series1 <- read_html("https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_1")
+tables1 <- series1 |> html_elements("table")
+basic_table1 <- html_table(tables1[[2]]) |>
+  janitor::remove_empty() |>  
+  mutate(
+    nickname = str_extract(Contestant, "'([^']+)'")
+  ) |>
+  separate(
+    Contestant, into = c("first_name", "last_name"), sep = " ", extra = "merge"
+  ) |>
+  mutate(
+    first_name = ifelse(is.na(nickname), first_name, nickname),
+    last_name = ifelse(!is.na(nickname), str_extract(last_name, "[^' ]*$"), last_name),
+    first_name = str_remove_all(first_name, "'")
+  ) |>
+  select(-nickname) |>
+  clean_names()
+
+
+#https://cran.r-project.org/web/packages/janitor/vignettes/janitor.html, for help with janitor functions
+#https://medium.com/@statisticswithoutborders/r-function-of-the-week-ifelse-vs-if-else-bed37f474fca for help with
+
+```
+
