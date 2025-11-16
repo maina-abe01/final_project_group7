@@ -3,20 +3,103 @@ title: "dataset"
 format: pdf
 ---
 
-```{r}
+```{r, message = FALSE}
 #Import all libraries
 library(rvest)
 library(stringr)
 library(tidyverse)
 library(janitor)
+library(dplyr)
+```
+
+```{r}
+#create a vector for all webpages we want to scrape
+urls <- c(
+  "https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_7",
+  "https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_8",
+  "https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_9",
+  "https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_10",
+  "https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_11",
+  "https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_12"
+)
+
+#Check to see if we can scrape webpages
+for (i in urls){
+  robotstxt::paths_allowed(urls[i])
+}
+```
+
+```{r}
+#Create function to scrape webpages
+
+scrape_series <- function(url){
+  
+  series <- read_html(url)
+  tables <- series |> html_elements("table.wikitable")
+  
+  df <- html_table(tables[[1]]) |> 
+    janitor::remove_empty(which = "cols") 
+    
+  contestant <- names(df)[str_detect(names(df), "^Contestant")]
+  if (!is.na(contestant)) {
+    names(df)[names(df) == contestant] <- "Contestant"
+  }
+  
+  df <- df |> 
+    mutate(
+      nickname = str_extract(Contestant, "'([^']+)'|\"([^\"]+)\""),
+      nickname = str_remove_all(nickname, "['\"]")
+    ) |>
+    separate(
+      Contestant, into = c("first_name", "last_name"), sep = " ", extra = "merge", remove = FALSE
+    ) |>
+    separate(
+      Hometown, into = c("City/Town", "Country"), sep = ",", fill = "left"
+    ) |>
+    mutate(
+      first_name = ifelse(is.na(nickname), first_name, nickname),
+      last_name = ifelse(!is.na(nickname), str_extract(last_name, "[^'\" ]*$"), last_name),
+      first_name = str_remove_all(first_name, "['\"]")
+    ) |>
+    clean_names() 
+  
+  return(df)
+}
+
+
 ```
 
 
 ```{r}
+all_series_df <- data.frame() #Create empty data frame
+
+#Loop over all urls and create 1 dataframe
+for (i in seq_along(urls)){
+  df <- scrape_series(urls[i])
+  df$series <- i
+  all_series_df <- bind_rows(all_series_df, df)
+}
+
+#Credit for bind_rows: https://dplyr.tidyverse.org/reference/bind_rows.html
+```
+
+
+
+
+
+
+
+```{r}
+#Just series 1
 robotstxt::paths_allowed("https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_1")
                          
 series1 <- read_html("https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_1")
+
+gender <- series1 |>
+  html_elements(".jquery-tablesorter td:nth-child(1)")
+
 tables1 <- series1 |> html_elements("table")
+
 basic_table1 <- html_table(tables1[[2]]) |>
   janitor::remove_empty() |>  
   mutate(
@@ -32,6 +115,9 @@ basic_table1 <- html_table(tables1[[2]]) |>
   ) |>
   select(-nickname) |>
   clean_names()
+
+
+ 
 
 
 #https://cran.r-project.org/web/packages/janitor/vignettes/janitor.html, for help with janitor functions
