@@ -14,13 +14,14 @@ library(dplyr)
 
 ```{r}
 #create a vector for all webpages we want to scrape
+
 urls <- c(
-  "https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_7",
   "https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_8",
   "https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_9",
   "https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_10",
   "https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_11",
-  "https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_12"
+  "https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_12",
+  "https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_13"
 )
 
 #Check to see if we can scrape webpages
@@ -66,62 +67,34 @@ scrape_series <- function(url){
   return(df)
 }
 
+#https://cran.r-project.org/web/packages/janitor/vignettes/janitor.html, for help with janitor functions
+#https://medium.com/@statisticswithoutborders/r-function-of-the-week-ifelse-vs-if-else-bed37f474fca for help with ifelse()
 
 ```
 
 
 ```{r}
-all_series_df <- data.frame() #Create empty data frame
+first_table <- data.frame() #Create empty data frame
 
 #Loop over all urls and create 1 dataframe
 for (i in seq_along(urls)){
   df <- scrape_series(urls[i])
-  df$series <- i
-  all_series_df <- bind_rows(all_series_df, df)
+  df$series <- i + 7 #Create a column with series number of each contestant
+  first_table <- bind_rows(first_table, df)
 }
 
 #Credit for bind_rows: https://dplyr.tidyverse.org/reference/bind_rows.html
 ```
 
 
-
-
-
-
-
 ```{r}
-#Just series 1
-robotstxt::paths_allowed("https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_1")
-                         
-series1 <- read_html("https://en.wikipedia.org/wiki/The_Great_British_Bake_Off_series_1")
-
-gender <- series1 |>
-  html_elements(".jquery-tablesorter td:nth-child(1)")
-
-tables1 <- series1 |> html_elements("table")
-
-basic_table1 <- html_table(tables1[[2]]) |>
-  janitor::remove_empty() |>  
-  mutate(
-    nickname = str_extract(Contestant, "'([^']+)'")
-  ) |>
-  separate(
-    Contestant, into = c("first_name", "last_name"), sep = " ", extra = "merge"
-  ) |>
-  mutate(
-    first_name = ifelse(is.na(nickname), first_name, nickname),
-    last_name = ifelse(!is.na(nickname), str_extract(last_name, "[^' ]*$"), last_name),
-    first_name = str_remove_all(first_name, "'")
-  ) |>
-  select(-nickname) |>
+#Add genders 
+gender <- read_csv("data/genders.csv") |>
   clean_names()
-
-
- 
-
-
-#https://cran.r-project.org/web/packages/janitor/vignettes/janitor.html, for help with janitor functions
-#https://medium.com/@statisticswithoutborders/r-function-of-the-week-ifelse-vs-if-else-bed37f474fca for help with
-
+first_table_and_gender <- left_join(first_table, gender, by = "contestant")
 ```
+
+
+
+
 
