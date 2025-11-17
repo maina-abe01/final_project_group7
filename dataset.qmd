@@ -94,6 +94,14 @@ gender <- read_csv("data/genders.csv") |>
 first_table_and_gender <- left_join(first_table, gender, by = "contestant")
 ```
 
+```{r}
+#Grouping Occupations
+first_table_and_gender <- first_table_and_gender |>
+  mutate(
+    occupation = str_replace_all(occupation, "[^A-Za-z ]", "")
+  )
+
+```
 
 
 

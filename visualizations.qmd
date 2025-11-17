@@ -1,0 +1,78 @@
+---
+title: "Visualizations"
+format: pdf
+---
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+#Age
+
+age_counts <- first_table_and_gender |>
+  group_by(age, gender) |>
+  summarize(
+    count = n()
+  ) |>
+  ungroup()
+
+age_pyramid <- ggplot(
+  age_counts,
+  aes(
+    x = age,
+    y = ifelse(
+      gender == "Male",
+      -count,
+      count
+    ),
+    fill = gender
+  ) 
+) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous(
+    labels = abs
+  ) +
+  coord_flip() +
+  theme_minimal() +
+  labs(
+    x = "Age",
+    y = "Count",
+    fill = "Gender"
+  ) +
+  scale_fill_manual(
+    values = c("Male" = "dodgerblue",
+               "Female" = "hotpink")
+  )
+  
+age_pyramid
+
+#Credit: https://www.r-bloggers.com/2023/09/creating-population-pyramid-plots-in-r-with-ggplot2/ for getting flipped x-axis so we can make a population pyramid
+```
+
+
+```{r}
+#Gender
+gender_counts <- first_table_and_gender |>
+  group_by(gender, series) |>
+  summarize(
+    count = n()
+  ) |>
+  ungroup()
+
+gender_plot <- ggplot(
+  gender_counts,
+  aes(x = gender, 
+      y = count, 
+      fill = gender) 
+) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(
+    values = c("Male" = "dodgerblue",
+               "Female" = "hotpink")
+  )
+  
+
+gender_plot
+```
+
